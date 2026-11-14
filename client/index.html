@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en" data-theme="rubayos-light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="RubayOS: your classes, notices, attendance and study plan in one place." />
+    <title>RubayOS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <script>
+      // Apply saved theme before first paint to avoid a flash.
+      try {
+        var t = localStorage.getItem('rubayos-theme');
+        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'rubayos-dark' : 'rubayos-light';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens. Components read these; daisyUI themes carry the same palette. */
+:root {
+  --ros-mint: #e3eed4;
+  --ros-sage-pale: #aec3b0;
+  --ros-sage: #6b9071;
+  --ros-forest: #375534;
+  --ros-pine: #0f2a1d;
+
+  --ros-blue: #dceaf7;
+  --ros-amber: #f8e8c9;
+  --ros-coral: #f5dedc;
+  --ros-lavender: #e9e0f5;
+
+  --ros-radius-card: 1.25rem;
+  --ros-radius-control: 0.75rem;
+  --ros-space: 1rem;
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: 'Plus Jakarta Sans', 'Hind Siliguri', system-ui, sans-serif; }
+
+:focus-visible {
+  outline: 2px solid var(--ros-forest);
+  outline-offset: 2px;
+}
+[data-theme='rubayos-dark'] :focus-visible { outline-color: var(--ros-sage-pale); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+.ros-card {
+  background: var(--fallback-b1, oklch(var(--b1)));
+  border: 1px solid oklch(var(--b3) / 0.6);
+  border-radius: var(--ros-radius-card);
+}
