@@ -11,6 +11,7 @@ const router = Router();
 
 router.use('/institutions', buildCrudRouter({
   model: Institution,
+  kind: 'institution',
   createSchema: S.institutionCreate,
   updateSchema: S.institutionUpdate,
   filterKeys: [],
@@ -18,6 +19,7 @@ router.use('/institutions', buildCrudRouter({
 
 router.use('/colleges', buildCrudRouter({
   model: College,
+  kind: 'college',
   createSchema: S.collegeCreate,
   updateSchema: S.collegeUpdate,
   filterKeys: ['institutionId'],
@@ -29,6 +31,7 @@ router.use('/colleges', buildCrudRouter({
 
 router.use('/departments', buildCrudRouter({
   model: Department,
+  kind: 'department',
   createSchema: S.departmentCreate,
   updateSchema: S.departmentUpdate,
   filterKeys: ['collegeId', 'institutionId'],
@@ -40,6 +43,7 @@ router.use('/departments', buildCrudRouter({
 
 router.use('/programs', buildCrudRouter({
   model: Program,
+  kind: 'program',
   createSchema: S.programCreate,
   updateSchema: S.programUpdate,
   filterKeys: ['departmentId', 'collegeId'],
@@ -51,6 +55,7 @@ router.use('/programs', buildCrudRouter({
 
 router.use('/sessions', buildCrudRouter({
   model: AcademicSession,
+  kind: 'session',
   createSchema: S.sessionCreate,
   updateSchema: S.sessionUpdate,
   filterKeys: ['institutionId'],
@@ -62,6 +67,7 @@ router.use('/sessions', buildCrudRouter({
 
 router.use('/cohorts', buildCrudRouter({
   model: Cohort,
+  kind: 'cohort',
   createSchema: S.cohortCreate,
   updateSchema: S.cohortUpdate,
   filterKeys: ['programId', 'sessionId', 'departmentId', 'collegeId'],
@@ -111,12 +117,14 @@ router.use('/cohorts', buildCrudRouter({
 // Semesters are generated with the cohort, so there is no POST.
 router.use('/semesters', buildCrudRouter({
   model: Semester,
+  kind: 'semester',
   updateSchema: S.semesterUpdate,
   filterKeys: ['cohortId'],
 }));
 
 router.use('/sections', buildCrudRouter({
   model: Section,
+  kind: 'section',
   createSchema: S.sectionCreate,
   updateSchema: S.sectionUpdate,
   filterKeys: ['cohortId', 'semesterId'],
@@ -139,6 +147,7 @@ async function assertNoRollOverlap(semesterId: unknown, range: { min: number; ma
 
 router.use('/parts', buildCrudRouter({
   model: Part,
+  kind: 'part',
   createSchema: S.partCreate,
   updateSchema: S.partUpdate,
   filterKeys: ['cohortId', 'semesterId', 'sectionId'],
