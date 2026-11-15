@@ -24,6 +24,7 @@ code() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 echo "1. Admin login"
 R=$(curl -s -c "$JAR" -X POST $API/auth/login -H "$H" -d "{\"identifier\":\"$SMOKE_ADMIN_EMAIL\",\"password\":\"$SMOKE_ADMIN_PASSWORD\"}")
 TOKEN=$(echo "$R" | jget data.accessToken); check "admin gets an access token" "$([ -n "$TOKEN" ] && echo yes)" yes
+[ -z "$TOKEN" ] && { echo; echo "STOP: the admin login failed, so every later check would be meaningless."; echo "Use the email and password of the Super Admin you created with: npm run seed:admin -w server"; exit 1; }
 A="Authorization: Bearer $TOKEN"
 check "GET /auth/me works with the token" "$(code $API/auth/me -H "$A")" 200
 check "GET /auth/me fails without it" "$(code $API/auth/me)" 401

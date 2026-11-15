@@ -66,6 +66,15 @@ const table: Row[] = [
   ['deptA1: cannot create session in another institution', deptAdminA1, 'session:create', 'otherInstSession', false],
   ['deptB1: cannot read cohort of A1', deptAdminB1, 'cohort:read', 'cohortA1', false],
 
+  // Enrollment (section/part placement)
+  ['deptA1: manage enrollment in own department', deptAdminA1, 'enrollment:manage', 'cohortA1', true],
+  ['deptA1: cannot manage enrollment in A2', deptAdminA1, 'enrollment:manage', 'cohortA2', false],
+  ['deptA1: cannot even read enrollment in B1', deptAdminA1, 'enrollment:read', 'cohortB1', false],
+  ['collegeA: manage enrollment in any department of A', collegeAdminA, 'enrollment:manage', 'cohortA2', true],
+  ['collegeA: cannot manage enrollment in college B', collegeAdminA, 'enrollment:manage', 'cohortB1', false],
+  ['teacher: cannot read enrollment', teacherA1, 'enrollment:read', 'cohortA1', false],
+  ['student: cannot manage enrollment', studentA1, 'enrollment:manage', 'cohortA1', false],
+
   // Staff creation ladder
   ['deptA1: create teacher in own dept', deptAdminA1, 'staff:create:teacher', 'deptA1', true],
   ['deptA1: cannot create teacher in A2', deptAdminA1, 'staff:create:teacher', 'deptA2', false],

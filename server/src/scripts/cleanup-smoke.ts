@@ -1,6 +1,7 @@
 import { connectDb, disconnectDb } from '../config/db';
 import { logger } from '../config/logger';
-import { College, Department } from '../modules/academic/academic.models';
+import { AcademicSession, Cohort, College, Department, Part, Section, Semester } from '../modules/academic/academic.models';
+import { AssignmentHistory, SemesterEnrollment } from '../modules/enrollment/enrollment.models';
 import { PasswordReset, RefreshSession, RoleAssignment, User } from '../modules/auth/auth.models';
 import { RegistrationRequest, RosterEntry, StudentProfile } from '../modules/students/student.models';
 
@@ -21,6 +22,22 @@ export async function removeSmokeStaff() {
   return out;
 }
 
+/** Removes the "SMOKE-1" session, its cohort and everything under it, created by the Step 1.5 smoke test. */
+export async function removeSmokeCohort() {
+  const sessions = await AcademicSession.find({ label: 'SMOKE-1' }).select('_id').lean();
+  const cohorts = await Cohort.find({ sessionId: { $in: sessions.map((x) => x._id) } }).select('_id').lean();
+  const ids = cohorts.map((c) => c._id);
+  return {
+    history: (await AssignmentHistory.deleteMany({ cohortId: { $in: ids } })).deletedCount,
+    enrollments: (await SemesterEnrollment.deleteMany({ cohortId: { $in: ids } })).deletedCount,
+    parts: (await Part.deleteMany({ cohortId: { $in: ids } })).deletedCount,
+    sections: (await Section.deleteMany({ cohortId: { $in: ids } })).deletedCount,
+    semesters: (await Semester.deleteMany({ cohortId: { $in: ids } })).deletedCount,
+    cohorts: (await Cohort.deleteMany({ _id: { $in: ids } })).deletedCount,
+    sessions: (await AcademicSession.deleteMany({ label: 'SMOKE-1' })).deletedCount,
+  };
+}
+
 /** Removes the fake students from the Step 1.3 smoke test (registration numbers 90000000xx) and the Step 1.4 fake staff. */
 async function main() {
   await connectDb();
@@ -35,7 +52,9 @@ async function main() {
     roster: (await RosterEntry.deleteMany({ registrationNo: regs })).deletedCount,
     users: (await User.deleteMany({ _id: { $in: ids } })).deletedCount,
   };
-  logger.info({ students, staff: await removeSmokeStaff() }, 'Smoke-test data removed');
+  // Students first (their profiles point at the cohort), then the cohort, then the fake staff.
+  const cohort = await removeSmokeCohort();
+  logger.info({ students, cohort, staff: await removeSmokeStaff() }, 'Smoke-test data removed');
 }
 
 if (require.main === module) {

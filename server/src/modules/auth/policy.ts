@@ -56,6 +56,8 @@ export const RULES = {
   'part:create': ADMINS,
   'part:update': ADMINS,
   'roster:manage': ADMINS,
+  'enrollment:read': ADMINS,
+  'enrollment:manage': ADMINS,
   'registration:review': ADMINS,
   'staff:create:college_admin': SUPER,
   'staff:create:department_admin': SUPER_COLLEGE,

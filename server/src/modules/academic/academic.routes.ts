@@ -6,6 +6,7 @@ import * as S from './academic.schemas';
 import { AcademicSession, College, Cohort, Department, Institution, Part, Program, Section, Semester } from './academic.models';
 import { findOverlap, validateRange } from './rollRanges';
 import { planSemesters } from './semesterPlan';
+import { runAssignment } from '../enrollment/enrollment.service';
 
 const router = Router();
 
@@ -151,6 +152,11 @@ router.use('/parts', buildCrudRouter({
   createSchema: S.partCreate,
   updateSchema: S.partUpdate,
   filterKeys: ['cohortId', 'semesterId', 'sectionId'],
+  // A new or changed part may now cover students who had no part: place them right away.
+  afterSave: async (part, actorId) => {
+    const [cohort, semester] = await Promise.all([Cohort.findById(part.cohortId), Semester.findById(part.semesterId)]);
+    if (cohort && semester) await runAssignment({ cohort, semester, mode: 'unassigned', dryRun: false, actorId });
+  },
   prepareCreate: async (d) => {
     const section = await mustFind(Section, d.sectionId, 'Section');
     if (section.status !== 'active') throw AppError.badRequest('Section is inactive');

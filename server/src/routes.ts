@@ -7,6 +7,7 @@ import rosterRoutes from './modules/roster/roster.routes';
 import registrationRoutes from './modules/students/registrations.routes';
 import staffRoutes from './modules/staff/staff.routes';
 import usersRoutes from './modules/users/users.routes';
+import enrollmentRoutes from './modules/enrollment/enrollment.routes';
 import { authenticate, requireRole } from './middleware/authenticate';
 
 const router = Router();
@@ -22,5 +23,6 @@ router.use('/roster', rosterRoutes);
 router.use('/registrations', registrationRoutes);
 router.use('/staff', staffRoutes);
 router.use('/users', usersRoutes);
+router.use('/enrollment', enrollmentRoutes);
 
 export default router;

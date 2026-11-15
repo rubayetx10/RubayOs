@@ -12,6 +12,7 @@ An action is allowed only when ONE role assignment both has the right role and c
 | Session (shared by the institution): read / create / change | yes / yes / yes | read / yes / no | read / yes / no |
 | Cohort, semester, section, part: read / create / change | all | own college | own department |
 | Roster import, registration approval | all | own college | own department |
+| Enrollment: view sections/parts, auto-assign, move a student, promote a semester | all | own college | own department |
 | Create college admin | yes | no | no |
 | Create department admin | yes | own college | no |
 | Create teacher | yes | own college | own department |
@@ -26,3 +27,13 @@ Rules that always hold:
 - Nobody can deactivate or change the roles of their own account.
 - Deactivation and role changes take effect at once: old access tokens stop working and all logins are ended.
 - Super Admin accounts are created only with `npm run seed:admin`.
+
+## Roll engine (Step 1.5)
+
+- A student's section and part come from the roll ranges of the part, never from what the student types.
+- Placement happens when a student joins, when a part is created or edited, and on demand (`POST /enrollment/assign`).
+- Automatic runs fill in students who have no part. Mode `all` also corrects wrongly placed students.
+- A student placed by hand is never moved by an automatic run. A manual move outside the roll range is allowed but flagged.
+- Every placement is kept in the history (who, when, from, to, why).
+- Promoting a cohort adds a new semester record per student and closes the old one. Nothing is deleted.
+- Warnings: roll numbers no part covers, gaps between ranges, overlapping ranges, students placed in a part that no longer fits.

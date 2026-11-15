@@ -27,6 +27,7 @@ RS=$(login "$SMOKE_ADMIN_EMAIL" "$SMOKE_ADMIN_PASSWORD"); S=$(echo "$RS" | jget 
 RA=$(login "smoke-admin-a$D" "$PW"); TA=$(echo "$RA" | jget data.accessToken)
 RB=$(login "smoke-admin-b$D" "$PW"); TB=$(echo "$RB" | jget data.accessToken); B_ID=$(echo "$RB" | jget data.user.id)
 RT=$(login "smoke-teacher$D" "$PW"); TT=$(echo "$RT" | jget data.accessToken); T_ID=$(echo "$RT" | jget data.user.id)
+[ -z "$S" ] && { echo; echo "STOP: the Super Admin login failed, so every later check would be meaningless."; echo "Use the email and password of the Super Admin you created with: npm run seed:admin -w server"; exit 1; }
 for v in S TA TB TT; do check "token for $v" "$([ -n "${!v}" ] && echo yes)" yes; done
 [ -z "$TA" ] && { echo "Run: npm run seed:smoke-staff -w server"; exit 1; }
 HS="Authorization: Bearer $S"; HA="Authorization: Bearer $TA"; HB="Authorization: Bearer $TB"; HT="Authorization: Bearer $TT"

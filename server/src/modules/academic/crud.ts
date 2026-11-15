@@ -5,6 +5,7 @@ import { z, type ZodTypeAny } from 'zod';
 import { asyncHandler } from '../../common/asyncHandler';
 import { AppError } from '../../common/errors';
 import { sendSuccess } from '../../common/response';
+import { logger } from '../../config/logger';
 import { validate } from '../../middleware/validate';
 import { can, type Action, type Kind } from '../auth/policy';
 import { resourceOf, visibleFilter } from './academic.access';
@@ -23,6 +24,8 @@ export interface CrudOptions {
   /** Replace the default Model.create (for transactions). */
   create?: (data: Payload) => Promise<unknown>;
   prepareUpdate?: (existing: any, data: Payload) => Promise<Payload>;
+  /** Runs after a successful create or update. A failure here is logged, never turns the save into an error. */
+  afterSave?: (doc: any, actorId: string) => Promise<void>;
 }
 
 export async function mustFind(model: Model<any>, id: string, label: string) {
@@ -50,6 +53,14 @@ export function buildCrudRouter(opts: CrudOptions): Router {
     ...Object.fromEntries(opts.filterKeys.map((k) => [k, k.endsWith('Id') ? objectId.optional() : z.string().optional()])),
   });
   const idParams = z.object({ id: objectId });
+  const runAfterSave = async (doc: any, actorId: string) => {
+    if (!opts.afterSave) return;
+    try {
+      await opts.afterSave(doc, actorId);
+    } catch (err) {
+      logger.error({ err }, 'afterSave hook failed');
+    }
+  };
 
   router.get(
     '/',
@@ -87,6 +98,7 @@ export function buildCrudRouter(opts: CrudOptions): Router {
         if (opts.prepareCreate) data = await opts.prepareCreate(data);
         if (!can(req.auth!.roles, create, await resourceOf(opts.kind, data))) throw AppError.forbidden('This is outside your area');
         const doc = opts.create ? await opts.create(data) : await opts.model.create(data);
+        await runAfterSave(doc, req.auth!.userId);
         sendSuccess(res, doc, undefined, 201);
       }),
     );
@@ -105,6 +117,7 @@ export function buildCrudRouter(opts: CrudOptions): Router {
       if (opts.prepareUpdate) data = await opts.prepareUpdate(existing, data);
       existing.set(data);
       await existing.save();
+      await runAfterSave(existing, req.auth!.userId);
       sendSuccess(res, existing);
     }),
   );

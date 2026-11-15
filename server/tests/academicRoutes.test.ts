@@ -43,3 +43,18 @@ describe('user management API is locked', () => {
     });
   }
 });
+
+describe('enrollment API is locked', () => {
+  for (const [method, path] of [
+    ['get', `/api/v1/enrollment/overview?cohortId=${id}`],
+    ['get', `/api/v1/enrollment/students?cohortId=${id}`],
+    ['post', '/api/v1/enrollment/assign'],
+    ['post', `/api/v1/enrollment/students/${id}/reassign`],
+    ['get', `/api/v1/enrollment/students/${id}/history`],
+    ['post', `/api/v1/enrollment/cohorts/${id}/promote`],
+  ] as const) {
+    it(`${method.toUpperCase()} ${path.split('?')[0]} needs a login`, async () => {
+      expect((await request(app)[method](path)).status).toBe(401);
+    });
+  }
+});

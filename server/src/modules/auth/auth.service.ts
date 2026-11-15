@@ -9,6 +9,7 @@ import { audit } from '../audit/audit.model';
 import { Cohort, Department, Semester } from '../academic/academic.models';
 import { RosterEntry, RegistrationRequest, StudentProfile } from '../students/student.models';
 import { evaluateRosterMatch, normalizeName, normalizeRegNo } from '../students/nameMatch';
+import { enrollOnJoin } from '../enrollment/enrollment.service';
 import { PasswordReset, RefreshSession, RoleAssignment, User } from './auth.models';
 import { dummyVerify, hashPassword, verifyPassword } from './password';
 import { signAccessToken } from './tokens';
@@ -181,7 +182,7 @@ export async function createStudentRecords(
   if (!cohort) throw AppError.badRequest('Cohort not found');
   const semester = await Semester.findOne({ cohortId: cohort._id, number: cohort.currentSemesterNo }).session(session);
 
-  await StudentProfile.create(
+  const [profile] = await StudentProfile.create(
     [
       {
         userId,
@@ -197,6 +198,7 @@ export async function createStudentRecords(
     ],
     { session },
   );
+  if (profile && semester) await enrollOnJoin(profile, semester, session);
   await RoleAssignment.create(
     [{ userId, role: 'student', scope: { institutionId: roster.institutionId, collegeId: roster.collegeId, departmentId: roster.departmentId, cohortId: cohort._id } }],
     { session },
