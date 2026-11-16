@@ -77,6 +77,40 @@ function AddPart({ section, onDone }) {
   );
 }
 
+function Progress({ cohortId }) {
+  const qc = useQueryClient();
+  const { semesters, setSemesterId } = useAcademic();
+  const { data: cohort } = useQuery({ queryKey: ['structure', 'cohort', cohortId], queryFn: () => apiFetch(`/academic/cohorts/${cohortId}`) });
+  const [done, setDone] = useState(null);
+  const cur = cohort?.currentSemesterNo;
+  const last = semesters.length;
+  const move = useMutation({
+    mutationFn: () => post(`/enrollment/cohorts/${cohortId}/promote`, { toSemesterNo: cur + 1 }),
+    onSuccess: async (r) => {
+      const fresh = await apiFetch(`/academic/semesters?cohortId=${cohortId}&limit=20`);
+      const next = fresh.find((x) => x.number === r.toSemesterNo);
+      ['academic', 'structure', 'enrollment-overview'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }));
+      if (next) setSemesterId(next._id);
+      setDone(r);
+    },
+  });
+  if (!cohort) return null;
+  const ask = () => {
+    if (window.confirm(`Move this batch from semester ${cur} to semester ${cur + 1}?\n\nEvery student gets a new record for semester ${cur + 1}. Semester ${cur} records are kept. This cannot be undone here.`)) move.mutate();
+  };
+  return (
+    <div className="ros-card p-5">
+      <h2 className="font-bold">Batch progress</h2>
+      <p className="mt-1 text-sm">This batch is in <b>semester {cur}</b>.</p>
+      <button className="btn btn-secondary btn-sm mt-3" disabled={move.isPending || cur >= last} onClick={ask}>
+        {cur >= last ? 'Last semester reached' : `Move batch to semester ${cur + 1}`}
+      </button>
+      <Err e={move.error} />
+      {done && <p role="status" className="mt-3 text-sm">Moved {done.students} student(s) to semester {done.toSemesterNo}. {done.assigned} placed in a section already, {done.unassigned} waiting until you set up sections for this semester.</p>}
+    </div>
+  );
+}
+
 function PartRow({ p, onDone }) {
   const [edit, setEdit] = useState(false);
   const [v, setV] = useState({ name: p.name, min: p.rollMin, max: p.rollMax });
@@ -278,6 +312,7 @@ export default function Structure() {
         <p className="mt-1 max-w-prose opacity-75">Choose the cohort and semester at the top. Give each section the roll range you use in that semester. Use parts only if you split one section into smaller groups. A student goes where their class roll fits, and two ranges in one semester cannot overlap.</p>
       </div>
       <NewCohort />
+      {cohortId && <Progress cohortId={cohortId} />}
       {cohortId ? <Sections cohortId={cohortId} /> : <p className="ros-card p-5">Create a cohort first.</p>}
     </section>
   );
