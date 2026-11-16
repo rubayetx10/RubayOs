@@ -3,7 +3,7 @@ import mongoose, { type ClientSession } from 'mongoose';
 import { AppError } from '../../common/errors';
 import { Cohort, Part, Section, Semester } from '../academic/academic.models';
 import { findRangeForRoll } from '../academic/rollRanges';
-import { StudentProfile } from '../students/student.models';
+import { RosterEntry, StudentProfile } from '../students/student.models';
 import { AssignmentHistory, SemesterEnrollment } from './enrollment.models';
 import { overlappingPairs, planAssignments, rangeGaps, type Mode, type PartRange } from './enrollment.logic';
 
@@ -248,4 +248,55 @@ export async function overview(cohort: any, semester: any) {
       misplaced: plan.misplaced.map((m) => ({ profileId: m.profileId, classRoll: m.roll, partId: m.partId, expectedPartId: m.expectedPartId })),
     },
   };
+}
+
+/**
+ * Changes a student's class roll everywhere it is stored: the class list, the profile and every semester record.
+ * A student who is not registered yet only has the class list entry changed.
+ * Afterwards the student is placed again in the current semester from the new roll, unless an admin placed them by hand.
+ */
+export async function changeRoll(entry: any, newRoll: number, reason: string, actorId: string) {
+  const oldRoll = entry.classRoll as number;
+  if (newRoll === oldRoll) throw AppError.conflict(`The roll is already ${newRoll}`);
+  const clash = await RosterEntry.findOne({ cohortId: entry.cohortId, classRoll: newRoll, _id: { $ne: entry._id } }).lean();
+  if (clash) throw AppError.conflict(`Roll ${newRoll} already belongs to ${clash.name} (${clash.registrationNo}). Change that student first.`);
+
+  const profile = await StudentProfile.findOne({ institutionId: entry.institutionId, registrationNo: entry.registrationNo });
+  if (!profile) {
+    entry.classRoll = newRoll;
+    await entry.save();
+    return { oldRoll, newRoll, registered: false, placed: null as string | null };
+  }
+
+  let placedPart: string | null = null;
+  const db = await mongoose.startSession();
+  try {
+    await db.withTransaction(async () => {
+      placedPart = null;
+      await RosterEntry.updateOne({ _id: entry._id }, { $set: { classRoll: newRoll } }, { session: db });
+      await StudentProfile.updateOne({ _id: profile._id }, { $set: { classRoll: newRoll } }, { session: db });
+      await SemesterEnrollment.updateMany({ profileId: profile._id }, { $set: { classRoll: newRoll } }, { session: db });
+
+      if (!profile.currentSemesterId) return;
+      const enrollment = await SemesterEnrollment.findOne({ profileId: profile._id, semesterId: profile.currentSemesterId, status: 'active' }).session(db);
+      placedPart = enrollment?.partId ? String(enrollment.partId) : null;
+      if (!enrollment || enrollment.assignedBy === 'manual') return;
+
+      const hit = findRangeForRoll(await activeRanges(profile.currentSemesterId, db), newRoll);
+      const to = hit ? { sectionId: hit.sectionId, partId: hit.id } : { sectionId: null, partId: null };
+      if (String(enrollment.partId ?? '') === String(to.partId ?? '')) return;
+
+      const from = { sectionId: enrollment.sectionId ?? null, partId: enrollment.partId ?? null };
+      await SemesterEnrollment.updateOne({ _id: enrollment._id }, { $set: { ...to, assignedBy: hit ? 'auto' : 'none' } }, { session: db });
+      await StudentProfile.updateOne({ _id: profile._id }, { $set: to }, { session: db });
+      await AssignmentHistory.create(
+        [{ profileId: profile._id, userId: profile.userId, cohortId: profile.cohortId, semesterId: profile.currentSemesterId, from, to, method: 'auto', reason: `Roll changed ${oldRoll} to ${newRoll}: ${reason}`, actorId }],
+        { session: db },
+      );
+      placedPart = to.partId;
+    });
+  } finally {
+    await db.endSession();
+  }
+  return { oldRoll, newRoll, registered: true, placed: placedPart };
 }

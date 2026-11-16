@@ -10,6 +10,7 @@ import { objectId } from '../academic/academic.schemas';
 import { audit } from '../audit/audit.model';
 import { assertCohortAccess } from '../auth/scope';
 import { RosterEntry } from '../students/student.models';
+import { changeRoll } from '../enrollment/enrollment.service';
 import { normalizeName } from '../students/nameMatch';
 import { detectMapping, mapRows, parseCsv, validateRows, type Mapping } from './rosterImport';
 
@@ -135,6 +136,23 @@ router.get(
       RosterEntry.countDocuments(filter),
     ]);
     sendSuccess(res, items, { page: q.page, limit: q.limit, total });
+  }),
+);
+
+const rollBody = z.object({ classRoll: z.number().int().min(1).max(9999), reason: z.string().trim().min(3).max(300) }).strict();
+
+router.post(
+  '/:id/roll',
+  validate({ params: z.object({ id: objectId }), body: rollBody }),
+  asyncHandler(async (req, res) => {
+    const entry = await RosterEntry.findById((req.validated!.params as { id: string }).id);
+    if (!entry) throw AppError.notFound('Student not found in the class list');
+    await assertCohortAccess(req.auth!, entry.cohortId, 'roster:manage');
+    const { classRoll, reason } = req.validated!.body as z.infer<typeof rollBody>;
+
+    const result = await changeRoll(entry, classRoll, reason, req.auth!.userId);
+    await audit({ actorId: req.auth!.userId, action: 'roster.roll.change', entityType: 'RosterEntry', entityId: entry._id, meta: { registrationNo: entry.registrationNo, from: result.oldRoll, to: result.newRoll, reason }, req });
+    sendSuccess(res, result);
   }),
 );
 

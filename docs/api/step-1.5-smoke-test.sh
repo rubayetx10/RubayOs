@@ -122,5 +122,20 @@ P21=$(post $API/academic/parts "{\"sectionId\":\"$SEC2\",\"name\":\"Part 1\",\"r
 check "roll 5 is placed in the new semester's Part 1" "$(curl -s $API/auth/me -H "$HS5" | jget data.profile.partId)" "$P21"
 check "the old semester's record did not change" "$(curl -s "$API/enrollment/students?cohortId=$COH&semesterId=$SEM1" -H "$AUTH" | pyj "[s['partId'] for s in d['data'] if s['classRoll']==5][0]")" "$P2"
 
+echo "9. Editing a student's roll"
+RL=$(curl -s "$API/roster?cohortId=$COH&limit=50" -H "$AUTH")
+E5=$(echo "$RL" | pyj "[r['_id'] for r in d['data'] if r['classRoll']==5][0]")
+rollto() { curl -s -X POST $API/roster/$E5/roll -H "$H" -H "$1" -d "{\"classRoll\":$2,\"reason\":\"Smoke test: sheet had a typo\"}"; }
+check "a roll already used by another student is refused (409)" "$(curl -s -o /dev/null -w '%{http_code}' -X POST $API/roster/$E5/roll -H "$H" -H "$AUTH" -d '{"classRoll":45,"reason":"clash test"}')" 409
+check "the same roll again is refused (409)" "$(curl -s -o /dev/null -w '%{http_code}' -X POST $API/roster/$E5/roll -H "$H" -H "$AUTH" -d '{"classRoll":5,"reason":"no change"}')" 409
+check "admin B cannot change it (403)" "$(curl -s -o /dev/null -w '%{http_code}' -X POST $API/roster/$E5/roll -H "$H" -H "$HB" -d '{"classRoll":9,"reason":"hack attempt"}')" 403
+check "the student cannot change their own roll (403)" "$(curl -s -o /dev/null -w '%{http_code}' -X POST $API/roster/$E5/roll -H "$H" -H "$HS5" -d '{"classRoll":9,"reason":"my own roll"}')" 403
+check "roll 5 to 70 works" "$(rollto "$AUTH" 70 | jget data.newRoll)" 70
+check "the student profile shows the new roll" "$(curl -s $API/auth/me -H "$HS5" | jget data.profile.classRoll)" 70
+check "no part covers 70 in semester 2, so the student waits" "$(curl -s $API/auth/me -H "$HS5" | jget data.profile.partId)" None
+check "roll 70 to 7 places the student in Part 1 again" "$(rollto "$AUTH" 7 | jget data.placed)" "$P21"
+check "the class list shows roll 7" "$(curl -s "$API/roster?cohortId=$COH&limit=50" -H "$AUTH" | pyj "7 in [r['classRoll'] for r in d['data']]")" True
+check "the old semester record has the new roll too" "$(curl -s "$API/enrollment/students?cohortId=$COH&semesterId=$SEM1" -H "$AUTH" | pyj "sorted(s['classRoll'] for s in d['data'])")" "[7, 45, 75]"
+
 echo; echo "Result: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

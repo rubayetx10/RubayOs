@@ -49,6 +49,7 @@ describe('enrollment API is locked', () => {
     ['get', `/api/v1/enrollment/overview?cohortId=${id}`],
     ['get', `/api/v1/enrollment/students?cohortId=${id}`],
     ['post', '/api/v1/enrollment/assign'],
+    ['post', `/api/v1/roster/${id}/roll`],
     ['post', `/api/v1/enrollment/students/${id}/reassign`],
     ['get', `/api/v1/enrollment/students/${id}/history`],
     ['post', `/api/v1/enrollment/cohorts/${id}/promote`],
