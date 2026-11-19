@@ -14,6 +14,7 @@ import Courses from './pages/Courses';
 import Offerings from './pages/Offerings';
 import Routine from './pages/Routine';
 import Exams from './pages/Exams';
+import Syllabus from './pages/Syllabus';
 import Staff from './pages/Staff';
 import Structure from './pages/Structure';
 import SystemCheck from './pages/SystemCheck';
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/offerings" element={<Offerings />} />
             <Route path="/routine" element={<Routine />} />
             <Route path="/exams" element={<Exams />} />
+            <Route path="/syllabus" element={<Syllabus />} />
             <Route path="/staff" element={<Staff />} />
             <Route path="/registrations" element={<Registrations />} />
             <Route path="/system" element={<SystemCheck />} />

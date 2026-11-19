@@ -12,6 +12,32 @@ const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(
 const daysTo = (date) => Math.round((new Date(`${date}T00:00:00`) - new Date(`${today()}T00:00:00`)) / 86_400_000);
 const away = (n) => (n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`);
 
+function MyCoursesCard() {
+  const { data } = useQuery({ queryKey: ['my-courses'], queryFn: () => apiFetch('/my-courses/me') });
+  if (!data) return null;
+  return (
+    <div className="ros-card p-5 sm:col-span-2">
+      <h2 className="text-sm font-semibold opacity-70">My courses</h2>
+      {data.courses.length === 0 && <p className="mt-2">Your courses will appear here once your department sets them up.</p>}
+      <div className="mt-2 space-y-2">
+        {data.courses.map((c) => (
+          <details key={c.course.id} className="rounded border border-base-300 p-3">
+            <summary className="cursor-pointer font-semibold">{c.course.code} · {c.course.name}<span className="ml-2 text-sm font-normal opacity-70">{c.course.credit} credit{c.teachers.length ? ` · ${c.teachers.join(', ')}` : ''}</span></summary>
+            {!c.syllabus && <p className="mt-2 text-sm opacity-75">The syllabus has not been published yet.</p>}
+            {c.syllabus && (
+              <div className="mt-2 text-sm">
+                {c.syllabus.objectives.length > 0 && <><p className="font-semibold">Objectives</p><ul className="list-disc pl-5">{c.syllabus.objectives.map((o, i) => <li key={i}>{o}</li>)}</ul></>}
+                <p className="mt-2 font-semibold">Topics</p>
+                <ol className="list-decimal pl-5">{c.syllabus.topics.map((t, i) => <li key={i}>{t.title}{t.subtopics.length > 0 && <ul className="list-disc pl-5 opacity-80">{t.subtopics.map((x, k) => <li key={k}>{x}</li>)}</ul>}</li>)}</ol>
+              </div>
+            )}
+          </details>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ExamCard() {
   const { data } = useQuery({ queryKey: ['my-exams'], queryFn: () => apiFetch('/exam/me') });
   const upcoming = (data?.exams ?? []).filter((e) => e.date >= today());
@@ -91,6 +117,7 @@ export default function Dashboard() {
         )}
         {isStudent && <RoutineCard />}
         {isStudent && <ExamCard />}
+        {isStudent && <MyCoursesCard />}
         {isAdmin && <PendingCard />}
         {isAdmin && <CohortCards />}
         {roles.includes('teacher') && <Card title="Your classes">Coming with the course and routine modules</Card>}
