@@ -8,6 +8,10 @@ import registrationRoutes from './modules/students/registrations.routes';
 import staffRoutes from './modules/staff/staff.routes';
 import usersRoutes from './modules/users/users.routes';
 import enrollmentRoutes from './modules/enrollment/enrollment.routes';
+import courseRoutes from './modules/courses/course.routes';
+import offeringRoutes from './modules/offerings/offering.routes';
+import { adminRouter as examAdmin, studentRouter as examStudent } from './modules/exams/exam.routes';
+import { adminRouter as routineAdmin, studentRouter as routineStudent } from './modules/routines/routine.routes';
 import { authenticate, requireRole } from './middleware/authenticate';
 
 const router = Router();
@@ -24,5 +28,11 @@ router.use('/registrations', registrationRoutes);
 router.use('/staff', staffRoutes);
 router.use('/users', usersRoutes);
 router.use('/enrollment', enrollmentRoutes);
+router.use('/courses', courseRoutes);
+router.use('/offerings', offeringRoutes);
+router.use('/exams', examAdmin);
+router.use('/exam', examStudent);
+router.use('/routines', routineAdmin);
+router.use('/routine', routineStudent);
 
 export default router;

@@ -10,6 +10,7 @@ import { Cohort, Department, Semester } from '../academic/academic.models';
 import { RosterEntry, RegistrationRequest, StudentProfile } from '../students/student.models';
 import { evaluateRosterMatch, normalizeName, normalizeRegNo } from '../students/nameMatch';
 import { enrollOnJoin } from '../enrollment/enrollment.service';
+import { syncCourseEnrollmentsSafe } from '../offerings/offering.service';
 import { PasswordReset, RefreshSession, RoleAssignment, User } from './auth.models';
 import { dummyVerify, hashPassword, verifyPassword } from './password';
 import { signAccessToken } from './tokens';
@@ -162,6 +163,7 @@ export async function registerStudent(input: RegisterInput, meta: ReqMeta, req?:
     });
 
     if (match.decision === 'pending') return { status: 'pending_approval' };
+    await syncCourseEnrollmentsSafe((await StudentProfile.findOne({ userId }).select('currentSemesterId').lean())?.currentSemesterId);
 
     const user = await User.findById(userId);
     if (!user) throw AppError.notFound();

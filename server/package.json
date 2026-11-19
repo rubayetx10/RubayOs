@@ -12,7 +12,8 @@
     "seed": "tsx src/scripts/seed.ts",
     "seed:admin": "tsx src/scripts/seed-admin.ts",
     "cleanup:smoke": "tsx src/scripts/cleanup-smoke.ts",
-    "seed:smoke-staff": "tsx src/scripts/seed-smoke-staff.ts"
+    "seed:smoke-staff": "tsx src/scripts/seed-smoke-staff.ts",
+    "admin:fix": "tsx src/scripts/admin-fix.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",
@@ -27,6 +28,7 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.9.3",
+    "multer": "^2.5.0",
     "nodemailer": "^10.5.0",
     "papaparse": "^5.7.1",
     "pino": "^9.6.0",
@@ -38,6 +40,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.3.0",
     "@types/node": "^20.17.10",
     "@types/nodemailer": "^8.0.2",
     "@types/papaparse": "^5.5.2",

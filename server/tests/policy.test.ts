@@ -75,6 +75,28 @@ const table: Row[] = [
   ['teacher: cannot read enrollment', teacherA1, 'enrollment:read', 'cohortA1', false],
   ['student: cannot manage enrollment', studentA1, 'enrollment:manage', 'cohortA1', false],
 
+  // Courses follow the program's department
+  ['deptA1: create a course in own department', deptAdminA1, 'course:create', 'cohortA1', true],
+  ['deptA1: cannot create a course in A2', deptAdminA1, 'course:create', 'cohortA2', false],
+  ['collegeA: change a course in any department of A', collegeAdminA, 'course:update', 'cohortA2', true],
+  ['collegeA: cannot read a course of college B', collegeAdminA, 'course:read', 'cohortB1', false],
+  ['teacher: cannot create courses', teacherA1, 'course:create', 'cohortA1', false],
+
+  // Course offerings
+  ['deptA1: manage offerings of own department', deptAdminA1, 'offering:manage', 'cohortA1', true],
+  ['deptA1: cannot manage offerings of A2', deptAdminA1, 'offering:manage', 'cohortA2', false],
+  ['teacher: cannot manage offerings', teacherA1, 'offering:manage', 'cohortA1', false],
+
+  // Class routines
+  ['deptA1: manage routines of own department', deptAdminA1, 'routine:manage', 'cohortA1', true],
+  ['deptA1: cannot manage routines of A2', deptAdminA1, 'routine:manage', 'cohortA2', false],
+  ['student: cannot manage routines', studentA1, 'routine:manage', 'cohortA1', false],
+
+  // Exams
+  ['deptA1: manage exams of own department', deptAdminA1, 'exam:manage', 'cohortA1', true],
+  ['deptA1: cannot manage exams of A2', deptAdminA1, 'exam:manage', 'cohortA2', false],
+  ['teacher: cannot manage exams', teacherA1, 'exam:manage', 'cohortA1', false],
+
   // Staff creation ladder
   ['deptA1: create teacher in own dept', deptAdminA1, 'staff:create:teacher', 'deptA1', true],
   ['deptA1: cannot create teacher in A2', deptAdminA1, 'staff:create:teacher', 'deptA2', false],

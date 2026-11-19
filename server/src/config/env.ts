@@ -15,6 +15,9 @@ const schema = z
     REFRESH_TTL_DAYS_STUDENT: z.coerce.number().int().min(1).max(90).default(30),
     REFRESH_TTL_DAYS_STAFF: z.coerce.number().int().min(1).max(90).default(7),
 
+    GEMINI_API_KEY: z.string().optional(),
+    GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+
     SMTP_HOST: z.string().optional(),
     SMTP_PORT: z.coerce.number().int().default(465),
     SMTP_SECURE: z.enum(['true', 'false']).default('true'),

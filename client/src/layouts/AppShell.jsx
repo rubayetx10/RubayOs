@@ -20,6 +20,11 @@ function Shell() {
             <NavLink to="/dashboard" className={link}>Dashboard</NavLink>
             {isAdmin && <NavLink to="/structure" className={link}>Sections</NavLink>}
             {isAdmin && <NavLink to="/roster" className={link}>Class list</NavLink>}
+            {isAdmin && <NavLink to="/courses" className={link}>Courses</NavLink>}
+            {isAdmin && <NavLink to="/offerings" className={link}>This semester</NavLink>}
+            {isAdmin && <NavLink to="/routine" className={link}>Routine</NavLink>}
+            {isAdmin && <NavLink to="/exams" className={link}>Exams</NavLink>}
+            {isAdmin && <NavLink to="/staff" className={link}>Staff</NavLink>}
             {isAdmin && <NavLink to="/registrations" className={link}>Registrations</NavLink>}
             {isAdmin && <NavLink to="/system" className={link}>System</NavLink>}
           </nav>

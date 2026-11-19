@@ -18,11 +18,12 @@ export class ApiError extends Error {
 
 async function raw(path, { method = 'GET', body, signal, withMeta = false } = {}) {
   const headers = {};
-  if (body) headers['Content-Type'] = 'application/json';
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData;
+  if (body && !isForm) headers['Content-Type'] = 'application/json';
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
   let res;
   try {
-    res = await fetch(`${BASE}${path}`, { method, credentials: 'include', headers, body: body ? JSON.stringify(body) : undefined, signal });
+    res = await fetch(`${BASE}${path}`, { method, credentials: 'include', headers, body: body ? (isForm ? body : JSON.stringify(body)) : undefined, signal });
   } catch {
     throw new ApiError('Cannot reach the server', { code: 'NETWORK' });
   }

@@ -5,6 +5,56 @@ import { apiFetch } from '../services/api';
 
 const Card = ({ title, children }) => <div className="ros-card p-5"><h2 className="text-sm font-semibold opacity-70">{title}</h2><div className="mt-2 text-lg font-bold">{children}</div></div>;
 
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const REASON = { not_published: 'Your routine has not been published yet.', no_section: 'You will see your routine once you are placed in a section.' };
+
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const daysTo = (date) => Math.round((new Date(`${date}T00:00:00`) - new Date(`${today()}T00:00:00`)) / 86_400_000);
+const away = (n) => (n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`);
+
+function ExamCard() {
+  const { data } = useQuery({ queryKey: ['my-exams'], queryFn: () => apiFetch('/exam/me') });
+  const upcoming = (data?.exams ?? []).filter((e) => e.date >= today());
+  if (!data) return null;
+  return (
+    <div className="ros-card p-5 sm:col-span-2">
+      <h2 className="text-sm font-semibold opacity-70">Upcoming exams</h2>
+      {upcoming.length === 0 && <p className="mt-2">No exams announced yet.</p>}
+      <ul className="mt-2 space-y-2 text-sm">
+        {upcoming.map((e) => (
+          <li key={e.id} className={e.cancelled ? 'line-through opacity-60' : ''}>
+            <b>{e.course.code}</b> {e.course.name} · {e.title} · {e.date} {e.startTime}–{e.endTime}{e.room ? ` · Room ${e.room}` : ''}
+            <span className="ml-2 badge badge-ghost">{e.cancelled ? 'cancelled' : away(daysTo(e.date))}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function RoutineCard() {
+  const { data } = useQuery({ queryKey: ['my-routine'], queryFn: () => apiFetch('/routine/me') });
+  if (!data) return null;
+  const today = new Date().getDay();
+  const days = data.routine ? [...new Set(data.routine.entries.map((e) => e.day))] : [];
+  return (
+    <div className="ros-card p-5 sm:col-span-2">
+      <h2 className="text-sm font-semibold opacity-70">Class routine</h2>
+      {!data.routine && <p className="mt-2">{REASON[data.reason] ?? 'No routine yet.'}</p>}
+      {days.map((d) => (
+        <div key={d} className="mt-3">
+          <h3 className={`font-bold ${d === today ? 'text-primary' : ''}`}>{DAYS[d]}{d === today ? ' · today' : ''}</h3>
+          <ul className="mt-1 space-y-1 text-sm">
+            {data.routine.entries.filter((e) => e.day === d).map((e, i) => (
+              <li key={i}>{e.startTime}–{e.endTime} · <b>{e.course.code}</b> {e.course.name}{e.teacher ? ` · ${e.teacher}` : ''}{e.room ? ` · Room ${e.room}` : ''}</li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PendingCard() {
   const { data } = useQuery({ queryKey: ['pending-registrations'], queryFn: () => apiFetch('/registrations?status=pending&limit=1', { withMeta: true }) });
   return <Card title="Registrations waiting for approval">{data ? data.meta.total : '…'}</Card>;
@@ -39,6 +89,8 @@ export default function Dashboard() {
             <Card title="Section and part">{profile.partId ? 'Assigned' : 'Not assigned yet'}</Card>
           </>
         )}
+        {isStudent && <RoutineCard />}
+        {isStudent && <ExamCard />}
         {isAdmin && <PendingCard />}
         {isAdmin && <CohortCards />}
         {roles.includes('teacher') && <Card title="Your classes">Coming with the course and routine modules</Card>}

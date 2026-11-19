@@ -14,6 +14,7 @@ import { assertCohortAccess } from '../auth/scope';
 import { StudentProfile } from '../students/student.models';
 import { AssignmentHistory, SemesterEnrollment } from './enrollment.models';
 import { overview, promoteCohort, reassignStudent, runAssignment } from './enrollment.service';
+import { syncCourseEnrollmentsSafe } from '../offerings/offering.service';
 
 const router = Router();
 router.use(authenticate, requireRole('super_admin', 'college_admin', 'department_admin'));
@@ -171,6 +172,7 @@ router.post(
     await assertCohortAccess(req.auth!, cohortId, 'enrollment:manage');
     const { toSemesterNo } = req.validated!.body as { toSemesterNo: number };
     const result = await promoteCohort(cohortId, toSemesterNo, req.auth!.userId);
+    await syncCourseEnrollmentsSafe((await Semester.findOne({ cohortId, number: toSemesterNo }).select('_id').lean())?._id);
     await audit({ actorId: req.auth!.userId, action: 'enrollment.promote', entityType: 'Cohort', entityId: cohortId, meta: result, req });
     sendSuccess(res, result);
   }),

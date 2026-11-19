@@ -11,7 +11,8 @@ import { audit } from '../audit/audit.model';
 import { User } from '../auth/auth.models';
 import { createStudentRecords } from '../auth/auth.service';
 import { areaFilter, assertCohortAccess, assertDepartmentAccess } from '../auth/scope';
-import { RegistrationRequest, RosterEntry } from './student.models';
+import { RegistrationRequest, RosterEntry, StudentProfile } from './student.models';
+import { syncCourseEnrollmentsSafe } from '../offerings/offering.service';
 import { normalizeName } from './nameMatch';
 
 const router = Router();
@@ -111,6 +112,7 @@ router.post(
       await db.endSession();
     }
 
+    await syncCourseEnrollmentsSafe((await StudentProfile.findOne({ userId: user._id }).select('currentSemesterId').lean())?.currentSemesterId);
     await audit({ actorId: req.auth!.userId, action: 'registration.approve', entityType: 'RegistrationRequest', entityId: request._id, meta: { userId: String(user._id) }, req });
     sendSuccess(res, { status: 'approved' });
   }),
