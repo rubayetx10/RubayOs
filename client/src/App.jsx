@@ -14,6 +14,7 @@ import Courses from './pages/Courses';
 import Offerings from './pages/Offerings';
 import Routine from './pages/Routine';
 import Exams from './pages/Exams';
+import Notices from './pages/Notices';
 import Syllabus from './pages/Syllabus';
 import Staff from './pages/Staff';
 import Structure from './pages/Structure';
@@ -31,6 +32,7 @@ export default function App() {
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/notices" element={<Notices />} />
           <Route element={<RequireRole allow={ADMIN_ROLES} />}>
             <Route path="/structure" element={<Structure />} />
             <Route path="/roster" element={<Roster />} />

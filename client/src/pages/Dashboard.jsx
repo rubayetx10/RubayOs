@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { ROLE_LABEL, useAuth } from '../context/AuthContext';
 import { useAcademic } from '../context/AcademicContext';
 import { apiFetch } from '../services/api';
@@ -11,6 +13,84 @@ const REASON = { not_published: 'Your routine has not been published yet.', no_s
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const daysTo = (date) => Math.round((new Date(`${date}T00:00:00`) - new Date(`${today()}T00:00:00`)) / 86_400_000);
 const away = (n) => (n === 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`);
+
+function Students({ offeringId }) {
+  const { data, isLoading } = useQuery({ queryKey: ['teacher-students', offeringId], queryFn: () => apiFetch(`/teacher/offerings/${offeringId}/students`) });
+  if (isLoading) return <p className="mt-2 text-sm" role="status">Loading…</p>;
+  return (
+    <table className="table table-xs mt-2">
+      <thead><tr><th>Roll</th><th>Name</th><th>Section</th></tr></thead>
+      <tbody>{data?.map((x, i) => <tr key={i}><td>{x.classRoll}</td><td>{x.name}</td><td>{x.section}</td></tr>)}{data?.length === 0 && <tr><td colSpan="3" className="opacity-70">No students yet.</td></tr>}</tbody>
+    </table>
+  );
+}
+
+function TeacherView() {
+  const [open, setOpen] = useState(null);
+  const { data } = useQuery({ queryKey: ['teacher-me'], queryFn: () => apiFetch('/teacher/me') });
+  if (!data) return null;
+  const dow = new Date().getDay();
+  const todays = data.routine.filter((r) => r.day === dow);
+  const days = [...new Set(data.routine.map((r) => r.day))];
+  const upcoming = data.exams.filter((e) => e.date >= today());
+  return (
+    <>
+      <div className="ros-card p-5 sm:col-span-2">
+        <h2 className="text-sm font-semibold opacity-70">Today’s classes</h2>
+        {todays.length === 0 && <p className="mt-2">No classes today.</p>}
+        <ul className="mt-2 space-y-1 text-sm">
+          {todays.map((r, i) => <li key={i}>{r.startTime}–{r.endTime} · <b>{r.course.code}</b> {r.course.name} · {r.batch}{r.section ? ` · Section ${r.section}` : ''}{r.room ? ` · Room ${r.room}` : ''}</li>)}
+        </ul>
+      </div>
+      <div className="ros-card p-5 sm:col-span-2">
+        <h2 className="text-sm font-semibold opacity-70">My courses</h2>
+        {data.courses.length === 0 && <p className="mt-2">You have no courses assigned yet. Your department will add you.</p>}
+        <div className="mt-2 space-y-2">
+          {data.courses.map((c) => (
+            <div key={c.offeringId} className="rounded border border-base-300 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p><b>{c.course.code}</b> {c.course.name}<span className="ml-2 text-sm opacity-70">{c.batch} · semester {c.semesterNumber} · {c.students} student(s)</span></p>
+                <button className="btn btn-ghost btn-xs" onClick={() => setOpen(open === c.offeringId ? null : c.offeringId)}>{open === c.offeringId ? 'Hide students' : 'Show students'}</button>
+              </div>
+              {open === c.offeringId && <Students offeringId={c.offeringId} />}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="ros-card p-5 sm:col-span-2">
+        <h2 className="text-sm font-semibold opacity-70">My weekly routine</h2>
+        {days.length === 0 && <p className="mt-2">No published routine includes you yet.</p>}
+        {days.map((d) => (
+          <div key={d} className="mt-3">
+            <h3 className={`font-bold ${d === dow ? 'text-primary' : ''}`}>{DAYS[d]}{d === dow ? ' · today' : ''}</h3>
+            <ul className="mt-1 space-y-1 text-sm">
+              {data.routine.filter((r) => r.day === d).map((r, i) => <li key={i}>{r.startTime}–{r.endTime} · <b>{r.course.code}</b> {r.course.name} · {r.batch}{r.section ? ` · Section ${r.section}` : ''}{r.room ? ` · Room ${r.room}` : ''}</li>)}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <div className="ros-card p-5 sm:col-span-2">
+        <h2 className="text-sm font-semibold opacity-70">Upcoming exams of my courses</h2>
+        {upcoming.length === 0 && <p className="mt-2">No exams announced yet.</p>}
+        <ul className="mt-2 space-y-1 text-sm">
+          {upcoming.map((e) => <li key={e.id} className={e.cancelled ? 'line-through opacity-60' : ''}><b>{e.course.code}</b> {e.course.name} · {e.title} · {e.batch} · {e.date} {e.startTime}–{e.endTime}{e.room ? ` · Room ${e.room}` : ''}<span className="ml-2 badge badge-ghost">{e.cancelled ? 'cancelled' : away(daysTo(e.date))}</span></li>)}
+        </ul>
+      </div>
+    </>
+  );
+}
+
+function NoticeCard() {
+  const { data } = useQuery({ queryKey: ['my-notices'], queryFn: () => apiFetch('/my-notices') });
+  if (!data) return null;
+  return (
+    <div className="ros-card p-5">
+      <h2 className="text-sm font-semibold opacity-70">Notices</h2>
+      <p className="mt-2 text-lg font-bold">{data.unread} unread</p>
+      <Link className="link text-sm font-semibold" to="/notices">Open notices</Link>
+    </div>
+  );
+}
 
 function MyCoursesCard() {
   const { data } = useQuery({ queryKey: ['my-courses'], queryFn: () => apiFetch('/my-courses/me') });
@@ -115,12 +195,13 @@ export default function Dashboard() {
             <Card title="Section and part">{profile.partId ? 'Assigned' : 'Not assigned yet'}</Card>
           </>
         )}
+        {isStudent && <NoticeCard />}
         {isStudent && <RoutineCard />}
         {isStudent && <ExamCard />}
         {isStudent && <MyCoursesCard />}
         {isAdmin && <PendingCard />}
         {isAdmin && <CohortCards />}
-        {roles.includes('teacher') && <Card title="Your classes">Coming with the course and routine modules</Card>}
+        {roles.includes('teacher') && <TeacherView />}
       </div>
     </section>
   );

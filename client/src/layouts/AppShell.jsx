@@ -18,6 +18,7 @@ function Shell() {
           <Brand />
           <nav aria-label="Main" className="flex flex-1 flex-wrap gap-1">
             <NavLink to="/dashboard" className={link}>Dashboard</NavLink>
+            <NavLink to="/notices" className={link}>Notices</NavLink>
             {isAdmin && <NavLink to="/structure" className={link}>Sections</NavLink>}
             {isAdmin && <NavLink to="/roster" className={link}>Class list</NavLink>}
             {isAdmin && <NavLink to="/courses" className={link}>Courses</NavLink>}

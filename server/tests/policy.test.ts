@@ -97,6 +97,14 @@ const table: Row[] = [
   ['deptA1: cannot manage exams of A2', deptAdminA1, 'exam:manage', 'cohortA2', false],
   ['teacher: cannot manage exams', teacherA1, 'exam:manage', 'cohortA1', false],
 
+  // Notices
+  ['deptA1: notice to a batch of own department', deptAdminA1, 'notice:manage', 'cohortA1', true],
+  ['deptA1: no notice to a batch of A2', deptAdminA1, 'notice:manage', 'cohortA2', false],
+  ['collegeA: college-wide notice for own college', collegeAdminA, 'notice:college', 'collegeA', true],
+  ['collegeA: no college-wide notice for college B', collegeAdminA, 'notice:college', 'collegeB', false],
+  ['deptA1: no college-wide notice', deptAdminA1, 'notice:college', 'collegeA', false],
+  ['teacher: no admin notice rights', teacherA1, 'notice:manage', 'cohortA1', false],
+
   // Staff creation ladder
   ['deptA1: create teacher in own dept', deptAdminA1, 'staff:create:teacher', 'deptA1', true],
   ['deptA1: cannot create teacher in A2', deptAdminA1, 'staff:create:teacher', 'deptA2', false],

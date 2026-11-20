@@ -56,6 +56,8 @@ export const RULES = {
   'part:create': ADMINS,
   'part:update': ADMINS,
   'roster:manage': ADMINS,
+  'notice:manage': ADMINS,
+  'notice:college': SUPER_COLLEGE,
   'exam:read': ADMINS,
   'exam:manage': ADMINS,
   'routine:read': ADMINS,
