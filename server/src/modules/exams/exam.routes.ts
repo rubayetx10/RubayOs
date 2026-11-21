@@ -20,6 +20,7 @@ import { parseAiJson, sniffMime, type OfferingOption } from '../routines/routine
 import { StudentProfile } from '../students/student.models';
 import { buildExamPrompt, buildExamProposal, examProblem, findExamConflicts } from './exam.logic';
 import { ExamEvent } from './exam.models';
+import { courseCodeOfOffering, notifyOfferingStudents } from '../notifications/notification.service';
 
 export const adminRouter = Router();
 adminRouter.use(authenticate, requireRole('super_admin', 'college_admin', 'department_admin'));
@@ -102,9 +103,14 @@ adminRouter.patch(
     const next = { date: b['date'] ?? ev.date, startTime: b['startTime'] ?? ev.startTime, endTime: b['endTime'] ?? ev.endTime };
     const problem = examProblem(next);
     if (problem) throw AppError.badRequest(problem);
+    const changed = ['date', 'startTime', 'endTime', 'room'].some((k) => b[k] !== undefined && b[k] !== (ev as any)[k]);
     // A published exam stays published when edited or cancelled, so students see the change at once.
     ev.set({ ...b, ...(b['status'] === 'draft' && ev.status === 'published' ? { status: 'published' } : {}) });
     await ev.save();
+    if (ev.publishedAt && (b['status'] === 'cancelled' || changed)) {
+      const cancelled = b['status'] === 'cancelled';
+      await notifyOfferingStudents(ev.offeringId, { type: 'exam', title: `${cancelled ? 'Exam cancelled' : 'Exam changed'}: ${await courseCodeOfOffering(ev.offeringId)} ${ev.title}`, body: cancelled ? `${ev.date} ${ev.startTime}-${ev.endTime}` : `Now ${ev.date} ${ev.startTime}-${ev.endTime}${ev.room ? ` · Room ${ev.room}` : ''}`, priority: 'urgent', refKind: 'exam', refId: ev._id, dedupeKey: `exam:${String(ev._id)}:${cancelled ? 'cancelled' : `changed:${Date.now()}`}` });
+    }
     await audit({ actorId: req.auth!.userId, action: b['status'] === 'cancelled' ? 'exam.cancel' : 'exam.update', entityType: 'ExamEvent', entityId: ev._id, meta: b, req });
     sendSuccess(res, { id: String(ev._id), status: ev.status });
   }),
@@ -127,6 +133,9 @@ adminRouter.post(
     if (conflicts.length) throw AppError.conflict(`${conflicts.length} clash(es) must be fixed before publishing`, conflicts);
 
     await ExamEvent.updateMany({ _id: { $in: drafts.map((d) => d._id) } }, { $set: { status: 'published', publishedAt: new Date(), publishedBy: req.auth!.userId } });
+    for (const d of drafts) {
+      await notifyOfferingStudents(d.offeringId, { type: 'exam', title: `New exam: ${await courseCodeOfOffering(d.offeringId)} ${d.title}`, body: `${d.date} ${d.startTime}-${d.endTime}${d.room ? ` · Room ${d.room}` : ''}`, priority: 'important', refKind: 'exam', refId: d._id, dedupeKey: `exam:${String(d._id)}:published` });
+    }
     await audit({ actorId: req.auth!.userId, action: 'exam.publish', entityType: 'Cohort', entityId: b.cohortId, meta: { count: drafts.length }, req });
     sendSuccess(res, { published: drafts.length });
   }),

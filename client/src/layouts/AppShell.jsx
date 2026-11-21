@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 import { LogOut } from 'lucide-react';
 import Brand from '../components/Brand';
 import ThemeToggle from '../components/ThemeToggle';
+import NotificationBell from '../components/NotificationBell';
 import { ROLE_LABEL, useAuth } from '../context/AuthContext';
 import { AcademicProvider, CohortSelect, SemesterSelect } from '../context/AcademicContext';
 
@@ -36,6 +37,7 @@ function Shell() {
             <div className="font-semibold">{user.name}</div>
             <div className="opacity-70">{ROLE_LABEL[top] ?? ''}</div>
           </div>
+          <NotificationBell />
           <ThemeToggle />
           <button type="button" className="btn btn-ghost btn-sm" onClick={logout}><LogOut size={16} aria-hidden="true" />Log out</button>
         </div>

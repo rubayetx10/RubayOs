@@ -16,6 +16,7 @@ import { CourseEnrollment, CourseOffering } from '../offerings/offering.models';
 import { StudentProfile } from '../students/student.models';
 import { isVisibleToStudent, studentNoticeFilter, type NoticeTarget, type StudentCtx } from './notice.logic';
 import { Notice, NoticeRead } from './notice.models';
+import { notifyNotice, withdrawNoticeNotifications } from '../notifications/notification.service';
 
 // ---------------------------------------------------------------- publishing (teachers and admins)
 
@@ -100,6 +101,7 @@ staffRouter.post(
     const where = await authorise(req, b.target);
     const top = ['super_admin', 'college_admin', 'department_admin', 'teacher'].find((r) => req.auth!.roles.some((g) => g.role === r))!;
     const notice = await Notice.create({ ...where, publisherId: req.auth!.userId, publisherRole: top, title: b.title, body: b.body, priority: b.priority ?? 'normal', pinned: b.pinned ?? false, expiresAt: b.expiresAt ?? null });
+    await notifyNotice(notice, plainTarget(notice));
     await audit({ actorId: req.auth!.userId, action: 'notice.publish', entityType: 'Notice', entityId: notice._id, meta: { scope: b.target.scope, priority: notice.priority }, req });
     sendSuccess(res, { id: String(notice._id) }, undefined, 201);
   }),
@@ -152,6 +154,7 @@ staffRouter.post(
     n.status = 'withdrawn';
     n.set('withdrawal', { by: req.auth!.userId, at: new Date(), reason: (req.validated!.body as { reason: string }).reason });
     await n.save();
+    await withdrawNoticeNotifications(n._id);
     await audit({ actorId: req.auth!.userId, action: 'notice.withdraw', entityType: 'Notice', entityId: n._id, meta: { reason: n.withdrawal?.reason }, req });
     sendSuccess(res, { id: String(n._id), status: 'withdrawn' });
   }),

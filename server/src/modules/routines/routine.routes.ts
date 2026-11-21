@@ -22,6 +22,7 @@ import { CourseOffering } from '../offerings/offering.models';
 import { StudentProfile } from '../students/student.models';
 import { diffEntries, findConflicts, slotProblem, type Slot } from './routine.logic';
 import { RoutineVersion } from './routine.models';
+import { notifySection } from '../notifications/notification.service';
 import { buildPrompt, buildProposal, parseAiJson, sniffMime, type OfferingOption } from './routine.import';
 
 export const adminRouter = Router();
@@ -140,6 +141,7 @@ adminRouter.post(
     } finally {
       await db.endSession();
     }
+    await notifySection(b.sectionId, b.semesterId, { type: 'routine', title: 'Class routine updated', body: draft.changelog.join('. '), refKind: 'routine', refId: draft._id, dedupeKey: `routine:${String(draft._id)}` });
     await audit({ actorId: req.auth!.userId, action: 'routine.publish', entityType: 'RoutineVersion', entityId: draft._id, meta: { versionNo: draft.versionNo, changelog: draft.changelog }, req });
     sendSuccess(res, { versionNo: draft.versionNo, changelog: draft.changelog });
   }),
